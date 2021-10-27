@@ -1,0 +1,7 @@
+{
+	"iterations": 800,
+	"thread_count": 2,
+	"epsilon": 0.25,
+	"alpha": 0.03,
+	"batch_size": 1
+}
