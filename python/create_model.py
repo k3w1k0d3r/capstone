@@ -8,41 +8,45 @@ from tensorflow.keras.models import Model
 from tensorflow.python.framework import convert_to_constants
 from tensorflow.python.framework import graph_io
 from tensorflow.python.framework import dtypes
+from tensorflow.keras.regularizers import l2
 from tensorflow.python.tools import optimize_for_inference_lib
 from google.protobuf import text_format
 import numpy as np
 import time
+import json
 physical_devices = tf.config.list_physical_devices("GPU")
 config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
+with open("../config.json", "r") as f:
+	config = json.load(f)
 def tail(inp):
-	x = Conv2D(64, (3, 3), padding="same", use_bias=False)(inp)
+	x = Conv2D(64, (3, 3), padding="same", use_bias=False, kernel_regularizer=l2(config["lambda"]))(inp)
 	x = BatchNormalization()(x)
 	x = ReLU()(x)
 	return x
 def residual(x):
-	y = Conv2D(64, (3, 3), padding="same", use_bias=False)(x)
+	y = Conv2D(64, (3, 3), padding="same", use_bias=False, kernel_regularizer=l2(config["lambda"]))(x)
 	y = BatchNormalization()(y)
 	y = ReLU()(y)
-	y = Conv2D(64, (3, 3), padding="same", use_bias=False)(y)
+	y = Conv2D(64, (3, 3), padding="same", use_bias=False, kernel_regularizer=l2(config["lambda"]))(y)
 	y = BatchNormalization()(y)
 	x+=y
 	x = ReLU()(x)
 	return x
 def policy_head(x):
-	x = Conv2D(2, (1, 1), use_bias=False)(x)
+	x = Conv2D(2, (1, 1), use_bias=False, kernel_regularizer=l2(config["lambda"]))(x)
 	x = BatchNormalization()(x)
 	x = ReLU()(x)
 	x = Flatten()(x)
-	out = Dense(361)(x)
+	out = Dense(361, kernel_regularizer=l2(.0001), bias_regularizer=l2(config["lambda"]))(x)
 	return out
 def value_head(x):
-	x = Conv2D(1, (1, 1), use_bias=False)(x)
+	x = Conv2D(1, (1, 1), use_bias=False, kernel_regularizer=l2(config["lambda"]))(x)
 	x = BatchNormalization()(x)
 	x = ReLU()(x)
 	x = Flatten()(x)
-	x = Dense(64, activation="relu")(x)
-	out = Dense(1, activation="tanh")(x)
+	x = Dense(64, activation="relu", kernel_regularizer=l2(config["lambda"]), bias_regularizer=l2(config["lambda"]))(x)
+	out = Dense(1, activation="tanh", kernel_regularizer=l2(config["lambda"]), bias_regularizer=l2(config["lambda"]))(x)
 	return out
 
 inp = Input((19, 19, 2), name="input_node")

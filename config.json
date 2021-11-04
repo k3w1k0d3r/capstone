@@ -3,5 +3,9 @@
 	"thread_count": 2,
 	"epsilon": 0.25,
 	"alpha": 0.03,
-	"batch_size": 1
+	"train_batch_size": 1,
+	"eval_batch_size": 1,
+	"lambda": 0.0001,
+	"initial_threshold": 0.5,
+	"policy_threshold": 0.55
 }
