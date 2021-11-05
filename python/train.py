@@ -9,6 +9,8 @@ import numpy as np
 import time
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 model = keras.models.load_model("../models/current/model.h5")
+with open("../models/current/is_initial", "r") as f:
+	initial = int(f.read())
 optimizer = keras.optimizers.RMSprop()
 def get_loss(x, y, mask, model, predictions):
 	predictions = model(x, training=True)
@@ -21,14 +23,14 @@ def get_loss(x, y, mask, model, predictions):
 	V_mask = tf.convert_to_tensor(V_mask)
 	P_mask = tf.convert_to_tensor(P_mask)
 	P_mask = P_mask*mask
-	V_loss = tf.reduce_sum(tf.square(tf.cast(V_mask, tf.float32)*(tf.cast(y, tf.float32)-predictions)))
-	P_loss = tf.reduce_sum(tf.cast(P_mask, tf.float32)*tf.cast(y, tf.float32)*tf.math.log(tf.nn.softmax(predictions*tf.cast(P_mask, tf.float32)))) #change to keras backend
+	V_loss = K.sum(K.square(K.cast(V_mask, tf.float32)*(K.cast(y, tf.float32)-predictions)))
+	P_loss = K.sum(K.cast(P_mask, tf.float32)*K.cast(y, tf.float32)*K.log(K.softmax(predictions*K.cast(P_mask, tf.float32)))) #change to keras backend
 	loss = V_loss+P_loss
 	for l in model.layers:
 		if hasattr(l, "kernel_regularizer") and l.kernel_regularizer:
-			loss+=l.kernel_regularizer(l.kernel)
+			loss+=x.shape[0]*l.kernel_regularizer(l.kernel)
 		if hasattr(l, "bias_regularizer") and l.bias_regularizer:
-			loss+=l.bias_regularizer(l.bias)
+			loss+=x.shape[0]*l.bias_regularizer(l.bias)
 	return loss
 def get_accuracy(y, predictions):
 	V_mask = np.zeros(y.shape)
@@ -42,11 +44,10 @@ def step(x, y, mask):
 		loss = get_loss(x, y, mask, model, predictions)
 		accuracy = get_accuracy(y, predictions)
 	gradients = tape.gradient(loss, model.trainable_variables)
-	if(sys.argv[1]=="train"):
-		optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+	optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 	return loss, accuracy
 def format_output(loss, accuracy):
-	return "%s loss: %s\n%s accuracy: %s\n"%(sys.argv[1], loss, sys.argv[1], accuracy)
+	return "loss: %s\naccuracy: %s"%(loss.numpy(), accuracy.numpy())
 x = np.load("data/x.npy")
 y = np.load("data/y.npy")
 mask = np.load("data/mask.npy")

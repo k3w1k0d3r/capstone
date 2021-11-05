@@ -4,7 +4,7 @@ import json
 import sys
 with open("../config.json", "r") as f:
 	config = json.load(f)
-for i in range(config[sys.argv[1]+"_batch_size"]):
+for i in range(config["batch_size"]):
 	result = cpp_wrapper.playgame()
 	positions = result[0]
 	policies = result[1]

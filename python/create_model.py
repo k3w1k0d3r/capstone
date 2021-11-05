@@ -66,3 +66,5 @@ output_graph_def = optimize_for_inference_lib.optimize_for_inference(constantGra
 graph_io.write_graph(output_graph_def, "../models/initial/", "model.pb", as_text=False)
 model.save("../models/initial/model.h5")
 os.system("cp -r -T ../models/initial/ ../models/current/")
+with open("../models/current/is_initial", "w") as f:
+	f.write("1")
