@@ -1,16 +1,19 @@
 import os
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 import tensorflow as tf
 from tensorflow import keras
 import tensorflow.keras.backend as K
+from tensorflow.python.framework import convert_to_constants
+from tensorflow.python.framework import graph_io
+from tensorflow.python.framework import dtypes
+from tensorflow.python.tools import optimize_for_inference_lib
+from google.protobuf import text_format
 from os import path
 import sys
 import numpy as np
 import time
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 model = keras.models.load_model("../models/current/model.h5")
-with open("../models/current/is_initial", "r") as f:
-	initial = int(f.read())
 optimizer = keras.optimizers.RMSprop()
 def get_loss(x, y, mask, model, predictions):
 	predictions = model(x, training=True)
@@ -52,4 +55,12 @@ x = np.load("data/x.npy")
 y = np.load("data/y.npy")
 mask = np.load("data/mask.npy")
 loss, accuracy = step(x, y, mask)
+@tf.function(input_signature=[tf.TensorSpec(shape=(None, 19, 19, 2), dtype=tf.float32)])
+def to_save(x):
+	return model(x)
+f = to_save.get_concrete_function()
+constantGraph = convert_to_constants.convert_variables_to_constants_v2(f)
+output_graph_def = optimize_for_inference_lib.optimize_for_inference(constantGraph.graph.as_graph_def(), ["x"], ["model/output_node/concat"], dtypes.float32.as_datatype_enum, False)
+graph_io.write_graph(output_graph_def, "../models/temporary/", "model.pb", as_text=False)
+model.save("../models/temporary/model.h5")
 print(format_output(loss, accuracy))

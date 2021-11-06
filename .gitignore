@@ -2,6 +2,8 @@ build/
 python/data/*
 models/initial/*
 models/current/*
+models/temporary/*
 !python/data/.gitkeep
 !models/initial/.gitkeep
 !models/current/.gitkeep
+!models/temporary/.gitkeep
