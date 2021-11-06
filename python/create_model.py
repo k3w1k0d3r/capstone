@@ -1,6 +1,7 @@
 import os
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 import tensorflow as tf
+tf.get_logger().setLevel("ERROR")
 from tensorflow.keras.layers import Input, Dense, Conv2D, BatchNormalization, ReLU, Concatenate, Flatten
 import tensorflow.keras.backend as K
 from tensorflow import keras

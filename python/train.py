@@ -1,6 +1,7 @@
 import os
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 import tensorflow as tf
+tf.get_logger().setLevel("ERROR")
 from tensorflow import keras
 import tensorflow.keras.backend as K
 from tensorflow.python.framework import convert_to_constants
@@ -39,7 +40,10 @@ def get_accuracy(y, predictions):
 	V_mask = np.zeros(y.shape)
 	for i in range(len(V_mask)):
 		V_mask[i][-1] = 1
-	return 0
+	V_mask = tf.convert_to_tensor(V_mask)
+	#return K.round((predictions+1)/2)*K.cast(V_mask, tf.float32)
+	#return K.cast(V_mask, tf.float32)*K.abs(K.round((predictions+1)/2)-K.cast(y, tf.float32))
+	return K.sum(K.cast(V_mask, tf.float32)*K.abs(K.round((predictions+1)/2)-(K.cast(y, tf.float32)+1)/2))/y.shape[0]
 @tf.function
 def step(x, y, mask):
 	with tf.GradientTape() as tape:
