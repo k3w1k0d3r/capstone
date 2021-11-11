@@ -27,6 +27,7 @@ def get_loss(x, y, mask, model, predictions):
 	V_mask = tf.convert_to_tensor(V_mask)
 	P_mask = tf.convert_to_tensor(P_mask)
 	P_mask = P_mask*mask
+	V_mask = V_mask*mask
 	V_loss = K.sum(K.square(K.cast(V_mask, tf.float32)*(K.cast(y, tf.float32)-predictions)))
 	P_loss = K.sum(K.cast(P_mask, tf.float32)*K.cast(y, tf.float32)*K.log(K.softmax(predictions*K.cast(P_mask, tf.float32)))) #change to keras backend
 	loss = V_loss+P_loss
@@ -41,8 +42,6 @@ def get_accuracy(y, predictions):
 	for i in range(len(V_mask)):
 		V_mask[i][-1] = 1
 	V_mask = tf.convert_to_tensor(V_mask)
-	#return K.round((predictions+1)/2)*K.cast(V_mask, tf.float32)
-	#return K.cast(V_mask, tf.float32)*K.abs(K.round((predictions+1)/2)-K.cast(y, tf.float32))
 	return K.sum(K.cast(V_mask, tf.float32)*K.abs(K.round((predictions+1)/2)-(K.cast(y, tf.float32)+1)/2))/y.shape[0]
 @tf.function
 def step(x, y, mask):

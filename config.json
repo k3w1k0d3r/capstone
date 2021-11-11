@@ -1,10 +1,11 @@
 {
 	"iterations": 800,
+	"eval_iterations": 500,
 	"thread_count": 2,
 	"epsilon": 0.25,
 	"alpha": 0.03,
-	"batch_size": 1,
-	"eval_batch_size": 1,
+	"batch_size": 60,
+	"eval_batch_size": 100,
 	"lambda": 0.0001,
-	"threshold": 0.55
+	"threshold": 0.6
 }

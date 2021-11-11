@@ -49,6 +49,7 @@ class treestate{
 		int getvisits();
 		int getmove();
 		vector<tuple<int, int, treestate*>> getresults();
+		treestate* getstate(int move);
 		void mark_keep();
 		void del_inf_mut();
 		~treestate();

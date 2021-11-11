@@ -1,10 +1,24 @@
 import subprocess
 import sys
-for i in range(1):
+from getkey import getkey
+from sys import exit
+from threading import Event, Thread
+SHUTDOWN = Event()
+def shutdown_on_key():
+	while True:
+		key_pressed = getkey(blocking=True)
+		if key_pressed == 'q':
+			SHUTDOWN.set()
+			return
+t = Thread(target=shutdown_on_key)
+t.start()
+while not SHUTDOWN.is_set():
 	subprocess.check_output([sys.executable, "datacollect.py"])
 	stuff = subprocess.check_output([sys.executable, "train.py"])
 	print(stuff.decode())
-'''
 	stuff = subprocess.check_output([sys.executable, "update_model.py"])
-'''
+	print(stuff.decode())
+	key_pressed = getkey(blocking=False)
+	if key_pressed == "q":
+		exit()
 print("bye")

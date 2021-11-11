@@ -53,7 +53,7 @@ treestate::treestate(float c, game& s_game, position c_position, int turn, nn::q
 		this->Q_improved.push_back(0);
 	}
 }
-vector<float> treestate::finish_sim(){
+vector<float> treestate::finish_sim(){ //this code is awkward because of past iterations, I promise I'm not just a bad coder
 	vector<int> player_order = this->s_game.getplayerorder();
 	this->infer_mutex->lock();
 	Tensor NN_out_tensor = nn::infer(nn::P2Tensor(this->c_position), *(this->session));
@@ -66,11 +66,12 @@ vector<float> treestate::finish_sim(){
 	bool finished = get<0>(outcome);
 	int winner = get<1>(outcome);
 	for(int i = 0;i<player_order.size();++i){
-		this->Q[i] = NN_out(i, this->s_game.getmoveset().size());
 		if(finished){
 			this->Q[i] = 2*(player_order[i]==winner)-1;
 		}
 		else if(player_order[i]==this->player){
+			this->Q[i] = NN_out(i, this->s_game.getmoveset().size());
+			this->Q[1-i] = -1*this->Q[i];
 			for(int j = 0;j<this->s_game.getmoveset().size();++j){
 				logit = NN_out(i, s_game.getmoveset()[j]);
 				if(!this->s_game.movelegal(this->c_position, s_game.getmoveset()[j])){
@@ -178,6 +179,14 @@ vector<tuple<int, int, treestate*>> treestate::getresults(){
 	}
 	return out;
 }
+treestate* treestate::getstate(int move){
+		for(int i = 0;i<this->children.size();++i){
+			if(this->children[i]->getmove()==move){
+				return this->children[i];
+			}
+		}
+		return NULL;
+	}
 void treestate::mark_keep(){
 	this->keep = true;
 	this->parent = NULL;

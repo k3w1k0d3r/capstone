@@ -115,4 +115,37 @@ namespace search{
 		vector<long> p_dims = {turn, (long)temppolicy.size()};
 		return make_tuple(get<1>(p_game.outcome(c_position)), boardlist, policylist, dims, p_dims);
 	}
+	bool testgame(game& p_game, unique_ptr<Session> *session1, unique_ptr<Session> *session2, float& temperature, bool& use_queue, int iterations, int thread_count, float epsilon, float Alpha, bool tested){
+		nn::queue *pos_queue = new nn::queue();
+		position c_position = p_game.getposition();
+		int turn = 0;
+		int move;
+		vector<treestate*> c_state = {NULL, NULL};
+		vector<unique_ptr<Session>*> session = {session1, session2};
+		tuple<int, treestate*, vector<double>> choice;
+		bool finished = get<0>(p_game.outcome(c_position));
+		treestate* next_state;
+		while(!finished){
+			choice = choose(temperature, p_game, c_position, turn, session[turn%2], c_state[turn%2], pos_queue, use_queue, iterations, thread_count, epsilon, Alpha);
+			c_state[turn%2] = get<1>(choice);
+			if(c_state[1-(turn%2)]){
+				next_state = c_state[1-(turn%2)]->getstate(get<0>(choice));
+				if(next_state){
+					next_state->mark_keep();
+				}
+				delete c_state[1-(turn%2)];
+				c_state[1-(turn%2)] = next_state;
+			}
+			c_position = c_state[turn%2]->getposition();
+			move = get<0>(choice);
+			finished = get<0>(p_game.outcome(c_position));
+			++turn;
+		}
+		c_state[0]->del_inf_mut();
+		delete c_state[0];
+		c_state[1]->del_inf_mut();
+		delete c_state[1];
+		delete pos_queue;
+		return 2*tested-1==get<1>(p_game.outcome(c_position));
+	}
 }

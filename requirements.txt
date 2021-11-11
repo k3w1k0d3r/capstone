@@ -5,6 +5,7 @@ certifi==2021.5.30
 charset-normalizer==2.0.6
 flatbuffers==2.0
 gast==0.4.0
+getkey==0.6.5
 google-auth==2.2.0
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
