@@ -14,6 +14,7 @@ import sys
 import numpy as np
 import time
 import math
+import json
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 model = keras.models.load_model("../models/current/model.h5")
 optimizer = keras.optimizers.RMSprop()
@@ -42,25 +43,29 @@ def get_accuracy(y, predictions):
 	for i in range(len(V_mask)):
 		V_mask[i][-1] = 1
 	V_mask = tf.convert_to_tensor(V_mask)
-	return K.sum(K.cast(V_mask, tf.float32)*K.abs(K.round((predictions+1)/2)-(K.cast(y, tf.float32)+1)/2))
+	return K.sum(K.cast(V_mask, tf.float32)*K.abs(K.round((predictions+1)/2)-(K.cast(y, tf.float32)+1)/2))/y.shape[0]
 @tf.function
-def step(x, y, mask):
-	with tf.GradientTape() as tape:
-		loss = 0
-		accuracy = 0
-		for i in range(math.ceil(x.shape[0]/config["model_batch_size"])):
+def step(x, y, mask, config):
+	losses = []
+	accs = []
+	for i in range(x.shape[0]//config["model_batch_size"]):
+		with tf.GradientTape() as tape:
 			predictions = model(x[i*config["model_batch_size"]:(i+1)*config["model_batch_size"]], training=True)
-			loss+=get_loss(x[i*config["model_batch_size"]:(i+1)*config["model_batch_size"]], y[i*config["model_batch_size"]:(i+1)*config["model_batch_size"]], mask[i*config["model_batch_size"]:(i+1)*config["model_batch_size"]], model, predictions)
-			accuracy+=get_accuracy(y[i*config["model_batch_size"]:(i+1)*config["model_batch_size"]], predictions[i*config["model_batch_size"]:(i+1)*config["model_batch_size"]])
-	gradients = tape.gradient(loss, model.trainable_variables)
-	optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-	return loss, accuracy
-def format_output(loss, accuracy, x):
-	return "loss: %s\naccuracy: %s"%(loss.numpy(), accuracy.numpy()/x.shape[0])
+			loss = get_loss(x[i*config["model_batch_size"]:(i+1)*config["model_batch_size"]], y[i*config["model_batch_size"]:(i+1)*config["model_batch_size"]], mask[i*config["model_batch_size"]:(i+1)*config["model_batch_size"]], model, predictions)
+			accuracy = get_accuracy(y[i*config["model_batch_size"]:(i+1)*config["model_batch_size"]], predictions)
+			losses.append(loss)
+			accs.append(accuracy)
+		gradients = tape.gradient(loss, model.trainable_variables)
+		optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+	return losses, accs
+def format_output(loss, accuracy):
+	return "loss: %s\naccuracy: %s"%(loss.numpy(), accuracy.numpy())
 x = np.load("data/x.npy")
 y = np.load("data/y.npy")
 mask = np.load("data/mask.npy")
-loss, accuracy = step(x, y, mask)
+with open("../config.json", "r") as f:
+	config = json.load(f)
+losses, accs = step(x, y, mask, config)
 @tf.function(input_signature=[tf.TensorSpec(shape=(None, 19, 19, 2), dtype=tf.float32)])
 def to_save(x):
 	return model(x)
@@ -69,4 +74,5 @@ constantGraph = convert_to_constants.convert_variables_to_constants_v2(f)
 output_graph_def = optimize_for_inference_lib.optimize_for_inference(constantGraph.graph.as_graph_def(), ["x"], ["model/output_node/concat"], dtypes.float32.as_datatype_enum, False)
 graph_io.write_graph(output_graph_def, "../models/temporary/", "model.pb", as_text=False)
 model.save("../models/temporary/model.h5")
-print(format_output(loss, accuracy, x))
+for i in range(len(losses)):
+	print(format_output(losses[i], accs[i]))
