@@ -71,10 +71,7 @@ def step(x, y, mask, config):
 	return losses, accs
 def format_output(loss, accuracy):
 	return "loss: %s\naccuracy: %s"%(loss.numpy(), accuracy.numpy())
-while(not SHUTDOWN.is_set()):
-	print("STARTING NEXT ROUND")
-	x, y, mask = data_collect(config["batch_size"])
-
+def train():
 	model = keras.models.load_model("../models/current/model.h5")
 	for i in range(config["epochs"]):
 		losses, accs = step(x, y, mask, config)
@@ -86,8 +83,17 @@ while(not SHUTDOWN.is_set()):
 	f = to_save.get_concrete_function()
 	constantGraph = convert_to_constants.convert_variables_to_constants_v2(f)
 	output_graph_def = optimize_for_inference_lib.optimize_for_inference(constantGraph.graph.as_graph_def(), ["x"], ["model/output_node/concat"], dtypes.float32.as_datatype_enum, False)
-	time.sleep(600)
+	graph_io.write_graph(output_graph_def, "../models/temp/", "model.pb", as_text=False)
+	model.save("../models/temp/model.h5")
+while(not SHUTDOWN.is_set()):
+	print("STARTING NEXT ROUND")
+	x, y, mask = data_collect(config["batch_size"])
 
+	pool = multiprocessing.Pool(processes=1)
+	pool.map(train, range(1))
+	pool.close()
+
+	time.sleep(600)
 	good_num = 0
 	for i in progressbar.progressbar(range(config["eval_batch_size"])):
 		pool = multiprocessing.Pool(processes=1)
@@ -96,7 +102,5 @@ while(not SHUTDOWN.is_set()):
 		time.sleep(10)
 	print("Success Rate: %s"%(good_num/config["eval_batch_size"]))
 	if(good_num/config["eval_batch_size"]>=config["threshold"]):
-		graph_io.write_graph(output_graph_def, "../models/current/", "model.pb", as_text=False)
-		model.save("../models/current/model.h5")
-	del model
+		os.system("cp -r ../models/temp ../models/current")
 	time.sleep(1800)

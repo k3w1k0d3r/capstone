@@ -1,5 +1,5 @@
 {
-	"iterations": 800,
+	"iterations": 600,
 	"eval_iterations": 600,
 	"thread_count": 2,
 	"epsilon": 0.25,
