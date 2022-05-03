@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <tuple>
-#include "position.h"
+#include "custom_position.h"
 
 using namespace std;
 

@@ -6,7 +6,7 @@ find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
 message(STATUS ${Python3_NumPy_VERSION})
 find_package(TensorflowCC REQUIRED)
 find_package(GSL REQUIRED)
-add_library(MCTS_exten SHARED cpp/exten.cpp cpp/NN.cpp cpp/position.cpp cpp/game.cpp cpp/treestate.cpp cpp/search.cpp)
+add_library(MCTS_exten SHARED cpp/exten.cpp cpp/NN.cpp cpp/custom_NN.cpp cpp/custom_position.cpp cpp/custom_game.cpp cpp/treestate.cpp cpp/search.cpp)
 set_target_properties(
 	MCTS_exten
 	PROPERTIES

@@ -1,6 +1,6 @@
 #ifndef NN_H
 #define NN_H
-#include "position.h"
+#include "custom_position.h"
 #include "tensorflow/cc/client/client_session.h"
 #include <tensorflow/cc/saved_model/loader.h>
 #include <tensorflow/cc/framework/scope.h>
