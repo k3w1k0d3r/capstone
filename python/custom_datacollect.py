@@ -4,7 +4,7 @@ import multiprocessing
 import time
 import progressbar
 def data_collect(batch_size):
-    for i in progressbar.progressbar(range(batch_size)):
+	for i in progressbar.progressbar(range(batch_size)):
 		pool = multiprocessing.Pool(processes=1)
 		result = pool.map(cpp_wrapper.playgame, range(1))[0]
 		pool.close()

@@ -15,6 +15,7 @@ from os import path
 import math
 from custom_datacollect import data_collect, cpp_wrapper, np, time, multiprocessing, progressbar
 from threading import Event, Thread
+from getkey import getkey
 SHUTDOWN = Event()
 def shutdown_on_key():
 	while True:
@@ -27,7 +28,6 @@ t.start()
 with open("../config.json", "r") as f:
 	config = json.load(f)
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
-model = keras.models.load_model("../models/current/model.h5")
 optimizer = keras.optimizers.RMSprop()
 def get_loss(x, y, mask, model, predictions):
 	V_mask = np.zeros(y.shape)
@@ -70,15 +70,16 @@ def step(x, y, mask, config):
 		optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 	return losses, accs
 def format_output(loss, accuracy):
-    return "loss: %s\naccuracy: %s"%(loss.numpy(), accuracy.numpy())
+	return "loss: %s\naccuracy: %s"%(loss.numpy(), accuracy.numpy())
 while(not SHUTDOWN.is_set()):
-    print("STARTING NEXT ROUND")
+	print("STARTING NEXT ROUND")
 	x, y, mask = data_collect(config["batch_size"])
 
+	model = keras.models.load_model("../models/current/model.h5")
 	for i in range(config["epochs"]):
 		losses, accs = step(x, y, mask, config)
-    for i in range(len(losses)):
-        print(format_output(losses[i], accs[i]))
+	for i in range(len(losses)):
+		print(format_output(losses[i], accs[i]))
 	@tf.function(input_signature=[tf.TensorSpec(shape=model.layers[0].input_shape[0], dtype=tf.float32)])
 	def to_save(x):
 		return model(x)
@@ -88,13 +89,14 @@ while(not SHUTDOWN.is_set()):
 	time.sleep(600)
 
 	good_num = 0
-    for i in progressbar.progressbar(range(config["eval_batch_size"])):
+	for i in progressbar.progressbar(range(config["eval_batch_size"])):
 		pool = multiprocessing.Pool(processes=1)
 		good_num+=pool.map(cpp_wrapper.testgame, range(1))[0]
 		pool.close()
 		time.sleep(10)
-    print("Success Rate: %s"%(good_num/config["eval_batch_size"]))
+	print("Success Rate: %s"%(good_num/config["eval_batch_size"]))
 	if(good_num/config["eval_batch_size"]>=config["threshold"]):
 		graph_io.write_graph(output_graph_def, "../models/current/", "model.pb", as_text=False)
 		model.save("../models/current/model.h5")
+	del model
 	time.sleep(1800)
