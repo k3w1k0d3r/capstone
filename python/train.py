@@ -30,7 +30,7 @@ def get_loss(x, y, mask, model, predictions):
 	P_mask = P_mask*mask
 	V_mask = V_mask*mask
 	V_loss = K.sum(K.square(K.cast(V_mask, tf.float32)*(K.cast(y, tf.float32)-predictions)))
-	P_loss = K.sum(K.cast(P_mask, tf.float32)*K.cast(y, tf.float32)*K.log(K.softmax(predictions*K.cast(P_mask, tf.float32)))) #change to keras backend
+	P_loss = -K.sum(K.cast(P_mask, tf.float32)*K.cast(y, tf.float32)*K.log(K.softmax(predictions*K.cast(P_mask, tf.float32)))) #change to keras backend
 	loss = V_loss+P_loss
 	for l in model.layers:
 		if hasattr(l, "kernel_regularizer") and l.kernel_regularizer:
@@ -43,7 +43,7 @@ def get_accuracy(y, predictions):
 	for i in range(len(V_mask)):
 		V_mask[i][-1] = 1
 	V_mask = tf.convert_to_tensor(V_mask)
-	return K.sum(K.cast(V_mask, tf.float32)*K.abs(K.round((predictions+1)/2)-(K.cast(y, tf.float32)+1)/2))/y.shape[0]
+	return 1-K.sum(K.cast(V_mask, tf.float32)*K.abs(K.round((predictions+1)/2)-(K.cast(y, tf.float32)+1)/2))/y.shape[0]
 @tf.function
 def step(x, y, mask, config):
 	losses = []
@@ -65,7 +65,8 @@ y = np.load("data/y.npy")
 mask = np.load("data/mask.npy")
 with open("../config.json", "r") as f:
 	config = json.load(f)
-losses, accs = step(x, y, mask, config)
+for i in range(2):
+	losses, accs = step(x, y, mask, config)
 @tf.function(input_signature=[tf.TensorSpec(shape=(None, 19, 19, 2), dtype=tf.float32)])
 def to_save(x):
 	return model(x)

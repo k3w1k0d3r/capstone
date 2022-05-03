@@ -87,8 +87,12 @@ namespace nn{
 		this->run_mutex->unlock();
 	}
 	Tensor infer(Tensor input, unique_ptr<Session>& session){
+		auto start = chrono::high_resolution_clock::now();
 		vector<Tensor> outputs;
 		Status run_status = session->Run({{"x", input}}, {"model/output_node/concat"}, {}, &outputs);
+		auto stop = chrono::high_resolution_clock::now();
+		auto duration = chrono::duration_cast<chrono::microseconds>(stop - start);
+		//cout << duration.count() << endl;
 		return outputs[0];
 	}
 	Tensor P2Tensor(position c_position){

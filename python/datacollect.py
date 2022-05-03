@@ -2,10 +2,15 @@ import cpp_wrapper
 import numpy as np
 import json
 import sys
+import multiprocessing
+import time
 with open("../config.json", "r") as f:
 	config = json.load(f)
 for i in range(config["batch_size"]):
-	result = cpp_wrapper.playgame()
+	pool = multiprocessing.Pool(processes=1)
+	result = pool.map(cpp_wrapper.playgame, range(1))[0]
+	pool.close()
+	time.sleep(10)
 	positions = result[0]
 	policies = result[1]
 	winner = result[2]
